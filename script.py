@@ -36,11 +36,12 @@ def make_parsed_path(path):
 if __name__ == '__main__':
     parser = build_parser()
     args = parser.parse_args()
+    
     if not args.path.endswith('.csv'):
         raise ValueError('Input file must have .csv format')
-
     df = pd.read_csv(args.path)
-
+    print(f'\nOpened file {args.path}.')
 
     parsed_file_path = make_parsed_path(args.path)
     df.to_csv(parsed_file_path)
+    print(f'\nSaved parsed file to {parsed_file_path}!\n')
