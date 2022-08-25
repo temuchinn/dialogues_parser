@@ -37,12 +37,12 @@ def find_regexp(reg_exp, lower=True):
     return find
 
 
-def get_insignts(df: pd.DataFrame):
+def get_insignts(df: pd.DataFrame, dlg_id: int) -> dict:
     insights = {}
-    for dlg_id in df.dlg_id.unique():
-        dlg_df = df[df['dlg_id'] == dlg_id]
-        insights['manager_greeting'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].greeting)
-        insights['manager_farewell'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].farewell)
+    
+    dlg_df = df[df['dlg_id'] == dlg_id]
+    insights['manager_greeting'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].greeting)
+    insights['manager_farewell'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].farewell)
 
     return insights
 
