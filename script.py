@@ -73,7 +73,8 @@ def get_insignts(df: pd.DataFrame, dlg_id: int) -> dict[str, any]:
     dlg_df = df[df['dlg_id'] == dlg_id]
     insights['manager_greeting'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].greeting)
     insights['manager_farewell'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].farewell)
-
+    insights['manager_introduced'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].introduce)
+    
     return insights
 
 
