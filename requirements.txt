@@ -2,3 +2,4 @@ pymorphy2==0.9
 pandas==1.4.3
 numpy==1.23.2
 nltk==3.6.1
+yargy==0.15.0
