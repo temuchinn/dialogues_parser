@@ -2,15 +2,38 @@ import re
 import argparse
 import pandas as pd
 import numpy as np
+import nltk
+import pymorphy2
 
 
 REGULAR_EXPRESSIONS_FOR_PARSING = {
     'greeting': 'здравствуйте|добрый день|добрый вечер|доброе утро|привет|приветствую',
     'farewell': 'до свидания|хорошего вечера|хорошего дня|всего хорошего|доброй ночи|всего доброго',
     'introduce': 'меня .*зовут|мо[её] имя|имя мо[её]',
-    'ask_name': '(как к вам можно|как (я ){0,1}могу к вам) обра(щаться|титься)|уточнит[ье] (пожалуйста ){0,1}(сво[её] ){0,1}имя|как вас (зовут|можно звать)',
     'probably_contain_company': 'компани[июя]|организаци[июя]|представляю',
 }
+
+
+class NerExtractor:
+    """Class containing methods for NER.
+    Methods:
+        extract_names(text, prob_thresh): proccesses text and finds all names, which confidence >= prob_thresh
+        
+    """
+    NAME_TAG = 'Name'
+
+    def __init__(self) -> None:
+        self.morph_analyzer = pymorphy2.MorphAnalyzer()
+    
+    def extract_names(self, text: str, prob_thresh: float = 0.4) -> list[str]:
+        names = []
+
+        for word in nltk.word_tokenize(text):
+            for p in self.morph_analyzer.parse(word):
+                if self.NAME_TAG in p.tag and p.score >= prob_thresh:
+                    names.append(p.normal_form)
+                    break
+        return names
 
 
 def build_arg_parser():
@@ -59,7 +82,7 @@ def find_regexp(reg_exp: str, lower: bool=True):
     return find
 
 
-def get_insignts(df: pd.DataFrame, dlg_id: int) -> dict[str, any]:
+def get_insights(df: pd.DataFrame, dlg_id: int) -> dict[str, any]:
     """Returns dict with insights from dataframe
     Args:
         df (DataFrame): dataframe, containing supportive columns
@@ -69,12 +92,14 @@ def get_insignts(df: pd.DataFrame, dlg_id: int) -> dict[str, any]:
         
     """
     insights = {}
-
+    name_extractor = NerExtractor()
+    
     dlg_df = df[df['dlg_id'] == dlg_id]
     insights['manager_greeting'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].greeting)
     insights['manager_farewell'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].farewell)
     insights['manager_introduced'] = np.any(dlg_df[(dlg_df['role'] == 'manager')].introduce)
-    
+    insights['all_names'] = name_extractor.extract_names(' '.join(dlg_df.text.to_list()))
+
     return insights
 
 
@@ -96,17 +121,19 @@ if __name__ == '__main__':
     
     dialogues_insights = dict()
     for dlg_id in df.dlg_id.unique():
-        dialogues_insights[dlg_id] = get_insignts(df, dlg_id)
+        dialogues_insights[dlg_id] = get_insights(df, dlg_id)
 
     parsed_file_path = make_output_path(args.path)
     df.to_csv(parsed_file_path)
-
 
     for dlg_id, insights in dialogues_insights.items():
         print("Dialogue id:", dlg_id)
         print("Manager_greeting:", insights['manager_greeting'])
         print("Manager_farewell:", insights['manager_farewell'])
         print("greeting + farewell:"    , insights['manager_greeting'] and insights['manager_farewell'])
+        print("manager indtroduced:", insights['manager_introduced'])
+        print("names in dialogue:", insights['all_names'])
+        
         print()
     
     print(f'\nSaved parsed file to "{parsed_file_path}"!\n')
